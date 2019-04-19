@@ -1,24 +1,24 @@
-const express = require('express');
-const graphqlHTTP = require('express-graphql');
-const schema = require('./schema/schema.js');
-const mongoose = require('mongoose');
-const cors = require('cors');
-const config = require('./config.json');
-const bodyParser = require('body-parser');
 
-const {
+const express = require('express');
+import {
     graphqlExpress,
     graphiqlExpress,
-} = require('graphql-server-express');
+} from 'graphql-server-express';
+import bodyParser from 'body-parser';
+import cors from 'cors';
 
-const graphql = require('graphql');
-const { execute, subscribe } = graphql;
-const { createServer } = require('http');
-const { SubscriptionServer } = require('subscriptions-transport-ws');
+const schema = require('./schema/schema');
+
+import { execute, subscribe } from 'graphql';
+import { createServer } from 'http';
+import { SubscriptionServer } from 'subscriptions-transport-ws';
+
+const mongoose = require('mongoose');
+const config = require('./config.json');
 
 mongoose.connect(config.mongoURL, function () { /* dummy function */ })
     .then(() => {
-        console.log('Connected with mongo');
+        //console.log('Connected with mongo');
     })
     .catch(err => { // mongoose connection error will be handled here
         console.error('Mongo connection error:', err.stack);
@@ -26,12 +26,11 @@ mongoose.connect(config.mongoURL, function () { /* dummy function */ })
     });
 
 mongoose.connection.once('open', () => {
-    console.log('Connected to database');
+    //console.log('Connected to database');
 });
 
-
 /** somthing something something  something something something */
-const PORT = 7900;
+const PORT = 8000;
 const server = express();
 
 server.use('*', cors({ origin: 'http://localhost:3000' }));
@@ -54,10 +53,7 @@ ws.listen(PORT, () => {
     new SubscriptionServer({
         execute,
         subscribe,
-        schema,
-        onConnect() {
-            console.log('connected to subscription server');
-        }
+        schema
     }, {
             server: ws,
             path: '/subscriptions',

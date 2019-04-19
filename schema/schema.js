@@ -1,12 +1,6 @@
-// define types
-// define relationship between types
-// define root queries: how do we intially get into data
-const Book = require('../models/book');
-const Author = require('../models/author');
 const graphql = require('graphql');
-const { PubSub } = require('graphql-subscriptions');
+import { withFilter, PubSub } from 'graphql-subscriptions';
 const pubsub = new PubSub();
-const _ = require('lodash');
 
 const {
     GraphQLObjectType,
@@ -17,7 +11,10 @@ const {
     GraphQLList,
     GraphQLNonNull } = graphql;
 
-const SOMETHING_CHANGED_TOPIC = 'something_changed';
+const Book = require('../models/book');
+const Author = require('../models/author');
+
+const BOOKS_FETCHED_TOPIC = 'books_fetched';
 
 // this is a function that takes in object type
 const BookType = new GraphQLObjectType({
@@ -65,7 +62,8 @@ const RootQuery = new GraphQLObjectType({
         books: {
             type: new GraphQLList(BookType),
             resolve(parent, args) {
-                pubsub.publish(SOMETHING_CHANGED_TOPIC, { somethingChanged: "123" });
+                let books = Book.find({});
+                pubsub.publish(BOOKS_FETCHED_TOPIC, { booksFetched: books });
                 return Book.find({});
             }
         },
@@ -123,15 +121,23 @@ const Mutation = new GraphQLObjectType({
 
 const Subscription = new GraphQLObjectType({
     name: 'Subscription',
-    fields: {
-        somethingChanged: {
-            type: GraphQLString,
-            resolve: () => {
-                subscribe: () => pubsub.asyncIterator(SOMETHING_CHANGED_TOPIC)
-            },
-            subscribe: () => pubsub.asyncIterator(SOMETHING_CHANGED_TOPIC)
+    fields: () => ({
+        booksFetched: {
+            type: new GraphQLList(BookType),
+            // resolve: (payload, args, context, info) => {
+            //     // Manipulate and return the new value
+            //     return payload;
+            // },
+            subscribe: () => pubsub.asyncIterator(BOOKS_FETCHED_TOPIC),
+            // subscribe: withFilter(
+            //     () => pubsub.asyncIterator(SOMETHING_CHANGED_TOPIC),
+            //     (payload, variables) => {
+            //         console.log('payload',payload.somethingChanged);
+            //         return payload.somethingChanged.authorID === '5cb72ee5ba1e171239233822';
+            //     }
+            // )
         },
-    }
+    })
 });
 
 module.exports = new GraphQLSchema({
